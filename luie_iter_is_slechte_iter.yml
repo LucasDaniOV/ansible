@@ -1,0 +1,336 @@
+---
+- hosts: all
+  user: root
+  vars:
+    domain: lucas-oudevrielink.sasm.uclllabs.be
+    admin_email: user1@{{ domain }}
+    mysql_server: localhost
+    mysql_user: showchecklog
+    mysql_pass: showchecklog
+    mysql_db: check
+
+  tasks:
+    - name: install apache
+      apt:
+        name:
+          - apache2
+          - apache2-bin
+          - apache2-data
+          - apache2-utils
+          - libapache2-mod-php8.1
+        state: present
+        update_cache: true
+
+    - name: create site directory structure
+      file:
+        path: "/var/www/{{ domain }}"
+        state: directory
+        mode: 0755
+
+    - name: create index file
+      file:
+        path: "/var/www/{{ domain }}/index.html"
+        state: touch
+        mode: 0644
+
+    - name: write index file
+      lineinfile:
+        path: "/var/www/{{ domain }}/index.html"
+        line: "welcome"
+
+    - name: create and write mysql_check.php
+      template:
+        src: mysql_check.php.j2
+        dest: "/var/www/{{ domain }}/mysql_check.php"
+        mode: 0644
+
+    - name: create vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/{{ domain }}.conf"
+        block: |
+          <VirtualHost *:80>
+            ServerName {{ domain }}
+            ServerAlias www.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/{{ domain }}-access.log combined
+          </VirtualHost>
+
+    - name: enable site
+      command: a2ensite {{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: create www1 directory structure
+      file:
+        path: "/var/www/www1.{{ domain }}/private"
+        state: directory
+        mode: 0755
+
+    - name: create www1 index file
+      file:
+        path: "/var/www/www1.{{ domain }}/index.html"
+        state: touch
+        mode: 0644
+
+    - name: write www1 index file
+      lineinfile:
+        path: "/var/www/www1.{{ domain }}/index.html"
+        line: www1
+
+    - name: create private/.htaccess file
+      file:
+        path: "/var/www/www1.{{ domain }}/private/.htaccess"
+        state: touch
+        mode: 0644
+
+    - name: write private/.htaccess file
+      blockinfile:
+        path: "/var/www/www1.{{ domain }}/private/.htaccess"
+        block: |
+          AuthType Basic
+          AuthName "Restricted Content"
+          AuthUserFile /etc/apache2/.htpasswd
+          Require valid-user
+
+    - name: create .htpasswd file
+      file:
+        path: "/etc/apache2/.htpasswd"
+        state: touch
+        mode: 0644
+
+    - name: write .htpasswd file
+      lineinfile:
+        path: "/etc/apache2/.htpasswd"
+        line: check:$apr1$x2r/4OQk$7kFXaP/zODmVlcuJ9vHSv.
+
+    - name: configure apache to restrict access to private directory
+      blockinfile:
+        path: /etc/apache2/apache2.conf
+        block: |
+          <Directory /var/www/www1.{{ domain }}/private>
+            Options Indexes FollowSymLinks
+            AllowOverride All
+            Require all granted
+          </Directory>
+        state: present
+        insertafter: EOF
+
+    - name: create www1 vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/www1.{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write www1 vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/www1.{{ domain }}.conf"
+        block: |
+          <VirtualHost *:80>
+            ServerName www1.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/www1.{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/www1.{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/www1.{{ domain }}-access.log combined
+          </VirtualHost>
+
+    - name: enable www1 site
+      command: a2ensite www1.{{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: create www2 directory structure
+      file:
+        path: "/var/www/www2.{{ domain }}"
+        state: directory
+        mode: 0755
+
+    - name: create www2 toupper.php
+      file:
+        path: "/var/www/www2.{{ domain }}/toupper.php"
+        state: touch
+        mode: 0644
+
+    - name: write www2 toupper.php
+      lineinfile:
+        path: "/var/www/www2.{{ domain }}/toupper.php"
+        line: <?php echo strtoupper($_GET['code']); ?>
+
+    - name: create www2 vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/www2.{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write www2 vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/www2.{{ domain }}.conf"
+        block: |
+          <VirtualHost *:80>
+            ServerName www2.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/www2.{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/www2.{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/www2.{{ domain }}-access.log combined
+          </VirtualHost>
+
+    - name: enable www2 site
+      command: a2ensite www2.{{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: create mystery2 directory structure
+      file:
+        path: "/var/www/mystery2.{{ domain }}/private"
+        state: directory
+        mode: 0755
+
+    - name: create mystery2 index file
+      file:
+        path: "/var/www/mystery2.{{ domain }}/index.html"
+        state: touch
+        mode: 0644
+
+    - name: write mystery2 index file
+      lineinfile:
+        path: "/var/www/mystery2.{{ domain }}/index.html"
+        line: feu7Pkeery
+
+    - name: create mystery2 vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/mystery2.{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write mystery2 vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/mystery2.{{ domain }}.conf"
+        block: |
+          <VirtualHost *:80>
+            ServerName mystery2.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/mystery2.{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/mystery2.{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/mystery2.{{ domain }}-access.log combined
+          </VirtualHost>
+
+    - name: enable mystery2 site
+      command: a2ensite mystery2.{{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: create secure directory structure
+      file:
+        path: "/var/www/secure.{{ domain }}/private"
+        state: directory
+        mode: 0755
+
+    - name: create secure index file
+      file:
+        path: "/var/www/secure.{{ domain }}/index.html"
+        state: touch
+        mode: 0644
+
+    - name: write secure index file
+      lineinfile:
+        path: "/var/www/secure.{{ domain }}/index.html"
+        line: secure
+
+    - name: create secure vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/secure.{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write secure vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/secure.{{ domain }}.conf"
+        block: |
+          <VirtualHost *:80>
+            ServerName secure.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            Redirect permanent / https://secure.{{ domain }}/
+          </VirtualHost>
+          <VirtualHost *:443>
+            ServerName secure.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/secure.{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/secure.{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/secure.{{ domain }}-access.log combined
+            SSLEngine on
+            SSLCertificateFile /etc/ssl/{{ domain }}/cert.pem
+            SSLCertificateKeyFile /etc/ssl/{{ domain }}/key.pem
+            SSLCertificateChainFile /etc/ssl/{{ domain }}/fullchain.pem
+          </VirtualHost>
+
+    - name: enable secure site
+      command: a2ensite secure.{{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: create supersecure directory structure
+      file:
+        path: "/var/www/supersecure.{{ domain }}/private"
+        state: directory
+        mode: 0755
+
+    - name: create supersecure index file
+      file:
+        path: "/var/www/supersecure.{{ domain }}/index.html"
+        state: touch
+        mode: 0644
+
+    - name: write supersecure index file
+      lineinfile:
+        path: "/var/www/supersecure.{{ domain }}/index.html"
+        line: supersecure
+
+    - name: create supersecure vhost conf file
+      file:
+        path: "/etc/apache2/sites-available/supersecure.{{ domain }}.conf"
+        state: touch
+        mode: 0644
+
+    - name: write supersecure vhost conf file
+      blockinfile:
+        path: "/etc/apache2/sites-available/supersecure.{{ domain }}.conf"
+        block: |
+          <VirtualHost *:443>
+            ServerName supersecure.{{ domain }}
+            ServerAdmin {{ admin_email }}
+            DocumentRoot /var/www/supersecure.{{ domain }}
+            ErrorLog ${APACHE_LOG_DIR}/supersecure.{{ domain }}-error.log
+            CustomLog ${APACHE_LOG_DIR}/supersecure.{{ domain }}-access.log combined
+            SSLEngine on
+            SSLCertificateFile /etc/ssl/{{ domain }}/cert.pem
+            SSLCertificateKeyFile /etc/ssl/{{ domain }}/key.pem
+            SSLCertificateChainFile /etc/ssl/{{ domain }}/fullchain.pem
+            Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+          </VirtualHost>
+
+    - name: enable supersecure site
+      command: a2ensite supersecure.{{ domain }}.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: enable ssl
+      command: a2enmod ssl
+      register: result
+      changed_when: result.rc == 0
+
+    - name: enable headers
+      command: a2enmod headers
+      register: result
+      changed_when: result.rc == 0
+
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
