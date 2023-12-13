@@ -1,0 +1,10 @@
+- hosts: ssm
+  vars:
+    backup_dir: /etc
+    backup_remote_host: "r0932709@leia.uclllabs.be"
+    backup_remote_port: "22345"
+    backup_remote_dir: "/home/LDAP/r0932709/SSM_backup_{{ ansible_date_time.date }}"
+    backup_rsync_options: "-az --delete -e ssh"
+    backup_remote_transfer: rsync
+  roles:
+    - alphanodes.backup
