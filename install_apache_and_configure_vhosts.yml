@@ -2,35 +2,34 @@
 - hosts: all
   user: root
   tasks:
+    - name: install apache
+      apt:
+        name:
+          - apache2
+          - apache2-bin
+          - apache2-data
+          - apache2-utils
+          - libapache2-mod-php8.1
+        state: present
+        update_cache: true
 
-  - name: install apache
-    apt:
-      name:
-        - apache2
-        - apache2-bin
-        - apache2-data
-        - apache2-utils
-        - libapache2-mod-php8.1
-      state: latest
-      update_cache: yes
+    - name: configure vhosts
+      synchronize:
+        src: /home/private/School/Fase2/Server & System Management/ansible/apache2/
+        dest: /etc/apache2
+        delete: true
+        rsync_opts:
+          - "--chown=root:root"
 
-  - name: configure vhosts
-    synchronize:
-      src: /home/private/School/Fase2/Server & System Management/ansible/apache2/
-      dest: /etc/apache2
-      delete: yes
-      rsync_opts:
-      - "--chown=root:root"
+    - name: add pages
+      synchronize:
+        src: /home/private/School/Fase2/Server & System Management/ansible/www/
+        dest: /var/www
+        delete: true
+        rsync_opts:
+          - "--chown=root:root"
 
-  - name: add pages
-    synchronize:
-      src: /home/private/School/Fase2/Server & System Management/ansible/www/
-      dest: /var/www
-      delete: yes
-      rsync_opts:
-      - "--chown=root:root" 
-
-  - name: restart apache
-    service:
-      name: apache2
-      state: restarted
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
