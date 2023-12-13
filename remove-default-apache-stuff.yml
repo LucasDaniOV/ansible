@@ -1,0 +1,22 @@
+- hosts: all
+  user: root
+  tasks:
+    - name: Remove /var/www/html
+      file:
+        path: /var/www/html
+        state: absent
+
+    - name: Disable default site
+      command: a2dissite 000-default.conf
+      register: result
+      changed_when: result.rc == 0
+
+    - name: Remove default vhost
+      file:
+        path: /etc/apache2/sites-available/000-default.conf
+        state: absent
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
